@@ -79,7 +79,7 @@ class GaussianDiffusion(nn.Module):
         direct_recons = None
 
         while (t):
-            step = torch.full((batch_size,), t - 1, dtype=torch.long).cuda() # batch timestep
+            step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device) # batch timestep
             x1_bar = self.denoise_fn(img, step)
             x2_bar = self.get_x2_bar_from_xt(x1_bar, img, step)
 
@@ -92,7 +92,7 @@ class GaussianDiffusion(nn.Module):
 
             xt_sub1_bar = x1_bar
             if t - 1 != 0:
-                step2 = torch.full((batch_size,), t - 2, dtype=torch.long).cuda()
+                step2 = torch.full((batch_size,), t - 2, dtype=torch.long).to(img.device)
                 xt_sub1_bar = self.q_sample(x_start=xt_sub1_bar, x_end=x2_bar, t=step2)
 
             x = img - xt_bar + xt_sub1_bar
@@ -172,7 +172,7 @@ class GaussianDiffusion(nn.Module):
         X1_0s, X2_0s, X_ts = [], [], []
         while (t):
 
-            step = torch.full((batch_size,), t - 1, dtype=torch.long).cuda()
+            step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device)
             model_predict = self.denoise_fn(img, step)
             DDPM_evalution_without_sigma = self.get_x2_bar_from_xt(model_predict, img, step)
 
@@ -187,7 +187,7 @@ class GaussianDiffusion(nn.Module):
 
             xt_sub1_bar = model_predict
             if t - 1 != 0:
-                step2 = torch.full((batch_size,), t - 2, dtype=torch.long).cuda()
+                step2 = torch.full((batch_size,), t - 2, dtype=torch.long).to(img.device)
                 xt_sub1_bar = self.q_sample(x_start=xt_sub1_bar, x_end=DDPM_evalution_without_sigma, t=step2)
 
             x = img - xt_bar + xt_sub1_bar

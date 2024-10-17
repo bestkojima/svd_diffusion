@@ -20,6 +20,16 @@ def del_folder(path):
         pass
 
 
+"""
+mnist
+
+cifar10
+celebA
+afHQ
+"""
+
+
+
 CelebA_folder = '/fs/cml-datasets/CelebA-HQ/images-128/' # change this to folder which has CelebA data
 
 ############################################# MNIST ###############################################

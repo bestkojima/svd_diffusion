@@ -21,11 +21,15 @@ import torchgeometry as tgm
 import glob
 import os
 from PIL import Image
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+# import matplotlib.pyplot as plt
+# import matplotlib.image as mpimg
 from torch import linalg as LA
 from sklearn.mixture import GaussianMixture
-from apex import amp
+try:
+    from apex import amp
+    APEX_AVAILABLE = True
+except:
+    APEX_AVAILABLE = False
 
 
 from dataset import Dataset,Dataset_Aug1
@@ -178,63 +182,70 @@ class Trainer(object):
 
 
     def train(self):
-
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         backwards = partial(loss_backwards, self.fp16)
 
+        self.step = 0
         acc_loss = 0
-        while self.step < self.train_num_steps:
-            u_loss = 0
-            for i in range(self.gradient_accumulate_every):
-                data_1 = next(self.dl)
-                data_2 = torch.randn_like(data_1)
 
-                data_1, data_2 = data_1.cuda(), data_2.cuda()
-                loss = torch.mean(self.model(data_1, data_2))
-                if self.step % 100 == 0:
-                    print(f'{self.step}: {loss.item()}')
-                u_loss += loss.item()
-                backwards(loss / self.gradient_accumulate_every, self.opt)
+# 使用 tqdm 包装 while 循环
+        with tqdm(total=self.train_num_steps, desc="Training", unit="step") as pbar:
+            while self.step < self.train_num_steps:
+                u_loss = 0
+                for i in range(self.gradient_accumulate_every):
+                    data_1 = next(self.dl)
+                    data_2 = torch.randn_like(data_1)
 
-            acc_loss = acc_loss + (u_loss/self.gradient_accumulate_every)
+                    data_1, data_2 = data_1.to(device), data_2.to(device)
+                    loss = torch.mean(self.model(data_1, data_2))
+                    if self.step % 100 == 0:
+                        print(f'{self.step}: {loss.item()}')
+                    u_loss += loss.item()
+                    backwards(loss / self.gradient_accumulate_every, self.opt)
 
-            self.opt.step()
-            self.opt.zero_grad()
+                acc_loss = acc_loss + (u_loss / self.gradient_accumulate_every)
 
-            if self.step % self.update_ema_every == 0:
-                self.step_ema()
+                self.opt.step()
+                self.opt.zero_grad()
 
-            if self.step != 0 and self.step % self.save_and_sample_every == 0:
-                milestone = self.step // self.save_and_sample_every
-                batches = self.batch_size
+                if self.step % self.update_ema_every == 0:
+                    self.step_ema()
 
-                data_1 = next(self.dl)
-                data_2 = torch.randn_like(data_1)
-                og_img = data_2.cuda()
+                if self.step != 0 and self.step % self.save_and_sample_every == 0:
+                    milestone = self.step // self.save_and_sample_every
+                    batches = self.batch_size
 
-                xt, direct_recons, all_images = self.ema_model.module.sample(batch_size=batches, img=og_img)
+                    data_1 = next(self.dl)
+                    data_2 = torch.randn_like(data_1)
+                    og_img = data_2.to(device)
 
-                og_img = (og_img + 1) * 0.5
-                utils.save_image(og_img, str(self.results_folder / f'sample-og-{milestone}.png'), nrow=6)
+                    xt, direct_recons, all_images = self.ema_model.module.sample(batch_size=batches, img=og_img)
 
-                all_images = (all_images + 1) * 0.5
-                utils.save_image(all_images, str(self.results_folder / f'sample-recon-{milestone}.png'), nrow = 6)
+                    og_img = (og_img + 1) * 0.5
+                    utils.save_image(og_img, str(self.results_folder / f'sample-og-{milestone}.png'), nrow=6)
 
-                direct_recons = (direct_recons + 1) * 0.5
-                utils.save_image(direct_recons, str(self.results_folder / f'sample-direct_recons-{milestone}.png'), nrow=6)
+                    all_images = (all_images + 1) * 0.5
+                    utils.save_image(all_images, str(self.results_folder / f'sample-recon-{milestone}.png'), nrow=6)
 
-                xt = (xt + 1) * 0.5
-                utils.save_image(xt, str(self.results_folder / f'sample-xt-{milestone}.png'),
-                                 nrow=6)
+                    direct_recons = (direct_recons + 1) * 0.5
+                    utils.save_image(direct_recons, str(self.results_folder / f'sample-direct_recons-{milestone}.png'), nrow=6)
 
-                acc_loss = acc_loss/(self.save_and_sample_every+1)
-                print(f'Mean of last {self.step}: {acc_loss}')
-                acc_loss=0
+                    xt = (xt + 1) * 0.5
+                    utils.save_image(xt, str(self.results_folder / f'sample-xt-{milestone}.png'), nrow=6)
 
-                self.save()
-                if self.step % (self.save_and_sample_every * 100) == 0:
-                    self.save(self.step)
+                    acc_loss = acc_loss / (self.save_and_sample_every + 1)
+                    print(f'Mean of last {self.step}: {acc_loss}')
+                    acc_loss = 0
 
-            self.step += 1
+                    self.save()
+                    if self.step % (self.save_and_sample_every * 100) == 0:
+                        self.save(self.step)
+
+                self.step += 1
+        
+                # 更新进度条
+                pbar.update(1)
+                pbar.set_postfix({"Loss": loss.item()})
 
         print('training completed')
 
