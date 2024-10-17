@@ -36,6 +36,7 @@ from dataset import Dataset,Dataset_Aug1
 from utils import EMA
 import os
 import errno
+from datetime import datetime
 def create_folder(path):
     try:
         os.mkdir(path)
@@ -195,8 +196,9 @@ class Trainer(object):
                 for i in range(self.gradient_accumulate_every):
                     data_1 = next(self.dl)
                     data_2 = torch.randn_like(data_1)
-
+                    
                     data_1, data_2 = data_1.to(device), data_2.to(device)
+                    
                     loss = torch.mean(self.model(data_1, data_2))
                     if self.step % 100 == 0:
                         print(f'{self.step}: {loss.item()}')
@@ -245,7 +247,7 @@ class Trainer(object):
         
                 # 更新进度条
                 pbar.update(1)
-                pbar.set_postfix({"Loss": loss.item()})
+                pbar.set_postfix({"Loss": loss.item(),"Current Time":datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
 
         print('training completed')
 
