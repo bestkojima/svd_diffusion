@@ -12,3 +12,23 @@ class EMA():
         if old is None:
             return new
         return old * self.beta + (1 - self.beta) * new
+
+
+def svd_batch(input,k=None):
+    U, S, V = torch.svd(matrix)
+    
+    
+    "soft make"
+    # a=torch.diag_embed(S)
+    # temp=torch.zeros_like(a)
+    # temp[:,:,:2,:2]=a[:,:,:2,:2]
+    # a.shape
+    reconstructed_matrix = torch.matmul(torch.matmul(U,torch.diag_embed(S)) , V.transpose(2,3))
+    
+    return reconstructed_matrix
+
+
+# if name==
+# matrix = torch.randn(2,3,3,3)
+# c=svd_batch(matrix)
+# z=F.mse_loss(c,matrix)
