@@ -13,8 +13,8 @@ class EMA():
             return new
         return old * self.beta + (1 - self.beta) * new
 
-
-def svd_batch(input,k=None):
+import torch
+def svd_batch(matrix,k=None):
     U, S, V = torch.svd(matrix)
     
     
@@ -28,7 +28,9 @@ def svd_batch(input,k=None):
     return reconstructed_matrix
 
 
-# if name==
-# matrix = torch.randn(2,3,3,3)
-# c=svd_batch(matrix)
-# z=F.mse_loss(c,matrix)
+if __name__ == '__main__':
+    matrix = torch.randn(2,3,3,3)
+    c=svd_batch(matrix)
+    from torch.nn import functional as F
+    z=F.mse_loss(c,matrix)
+    print(z)
