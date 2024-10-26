@@ -106,6 +106,10 @@ class GaussianDiffusion(nn.Module):
     #TODO
     @torch.no_grad()
     def gen_sample(self, batch_size=16, img=None, t=None):
+        """
+        ddim
+        ddpm
+        """
         self.denoise_fn.eval()
         if t == None:
             t = self.num_timesteps
@@ -311,24 +315,129 @@ class GaussianDiffusion(nn.Module):
 
 
 
+# full reconstructed
+# def svd_batch(matrix,k=None):
+#     U, S, V = torch.svd(matrix)
+    
+    
+#     "soft make"
+#     # a=torch.diag_embed(S)
+#     # temp=torch.zeros_like(a)
+#     # temp[:,:,:2,:2]=a[:,:,:2,:2]
+#     # a.shape
+#     reconstructed_matrix = torch.matmul(torch.matmul(U,torch.diag_embed(S)) , V.transpose(2,3))
+    
+#     return reconstructed_matrix
 
-def svd_batch(matrix,k=None):
+
+# def svd_batch_accmulate(matrix,k=0):
+#     U, S, V = torch.svd(matrix)
+    
+#     assert type()
+#     """
+#     func_desc:
+#         累加k对应的recon
+#         svd_batch_accmulate(martix,k=0) 返回原图 
+#         k=2 return sigma[k:]
+#     """
+#     a=torch.diag_embed(S)
+#     s_temp=torch.zeros_like(a)
+#     s_temp[:,:,k:,k:]=a[:,:,k:,k:]
+#     # [k,-1]
+#     # reconstructed_matrix = torch.matmul(torch.matmul(U,torch.diag_embed(S)) , V.transpose(2,3))
+    
+#     reconstructed_matrix = torch.matmul(torch.matmul(U,s_temp) , V.transpose(2,3))
+    
+#     return reconstructed_matrix
+
+
+
+def svd_batch_accmulate(matrix, k=None):
+    U, S, V = torch.svd(matrix)
+    
+    """
+    Perform SVD reconstruction for each batch element with accumulated singular values starting from k.
+    
+    Parameters:
+    - matrix: Input batch matrix of shape (batch_size, m, n).
+    - k: A list or tensor of k values for each batch element. If None, use all singular values.
+    
+    Returns:
+    - reconstructed_matrix: Reconstructed batch matrix of shape (batch_size, m, n).
+    """
+    batch_size = matrix.shape[0]
+    recon = []
+    
+    for i in range(batch_size):
+        a = torch.diag_embed(S[i])
+        s_temp = torch.zeros_like(a)
+        
+        # 如果 k 是 None，则使用所有奇异值
+        if k is None:
+            s_temp = a
+        else:
+            s_temp[:, k[i]:, k[i]:] = a[:, k[i]:, k[i]:]
+        
+        recon.append(torch.matmul(torch.matmul(U[i], s_temp), V[i].transpose(-1, -2)))
+    
+    reconstructed_matrix = torch.stack(recon, 0)
+    return reconstructed_matrix
+
+# def svd_batch_one(matrix,k=None):
+#     U, S, V = torch.svd(matrix)
+    
+    
+#     """
+#     func_desc:
+#         只添加单个k对应的accmulate
+#     """
+#     a=torch.diag_embed(S)
+#     s_temp=torch.zeros_like(a)
+#     s_temp[:,:,k:k+1,k:k+1]=a[:,:,k:k+1,k:k+1]
+#     # one by one
+#     # reconstructed_matrix = torch.matmul(torch.matmul(U,torch.diag_embed(S)) , V.transpose(2,3))
+    
+#     reconstructed_matrix = torch.matmul(torch.matmul(U,s_temp) , V.transpose(2,3))
+    
+#     return reconstructed_matrix
+
+
+
+def svd_batch_one(matrix,k=None):
     U, S, V = torch.svd(matrix)
     
     
-    "soft make"
-    # a=torch.diag_embed(S)
-    # temp=torch.zeros_like(a)
-    # temp[:,:,:2,:2]=a[:,:,:2,:2]
-    # a.shape
-    reconstructed_matrix = torch.matmul(torch.matmul(U,torch.diag_embed(S)) , V.transpose(2,3))
+    """
+    Perform SVD reconstruction for each batch element with a specified k value.
     
+    Parameters:
+    - matrix: Input batch matrix of shape (batch_size, m, n).
+    - k: A list or tensor of k values for each batch element. If None, use all singular values.
+    
+    Returns:
+    - reconstructed_matrix: Reconstructed batch matrix of shape (batch_size, m, n).
+    """
+    batch_size=matrix.shape[0]
+    recon=[]
+    
+    for i in range(batch_size):
+        
+        a=torch.diag_embed(S[i])
+       
+        s_temp=torch.zeros_like(a)
+        s_temp[:,k[i]:k[i]+1,k[i]:k[i]+1]=a[:,k[i]:k[i]+1,k[i]:k[i]+1]
+        recon.append(torch.matmul(torch.matmul(U[i],s_temp) , V[i].transpose(-1,-2)))
+        
+    reconstructed_matrix=torch.stack(recon,0)
+    print(reconstructed_matrix.shape)
     return reconstructed_matrix
 
 
-#TODO q_sample 修改 前向采样
 
-
+#TODO q_sample 修改 前向采样  符合算法1的loss完成 
+#TODO sample 修改 反向采样  算法1完成
+#TODO p_losses 修改
+#TODO 修改time_steps=k
 
 class SVDDiffusion(nn.Module):
     def __init__(
@@ -364,6 +473,7 @@ class SVDDiffusion(nn.Module):
 
     
     @torch.no_grad()
+    #P_sample
     def sample(self, batch_size = 16, img=None, t=None):
         """
         
@@ -373,26 +483,38 @@ class SVDDiffusion(nn.Module):
             t = self.num_timesteps
 
         xt = img
-        direct_recons = None
+        direct_recons = torch.zeros_like(img)
 
+        # while (t):
+        #     step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device) # batch timestep
+        #     x1_bar = self.denoise_fn(img, step)
+        #     x2_bar = self.get_x2_bar_from_xt(x1_bar, img, step)
+
+        #     if direct_recons is None:
+        #         direct_recons = x1_bar
+
+        #     xt_bar = x1_bar
+        #     if t != 0:
+        #         xt_bar = self.q_sample(x_start=xt_bar, x_end=x2_bar, t=step)
+
+        #     xt_sub1_bar = x1_bar
+        #     if t - 1 != 0:
+        #         step2 = torch.full((batch_size,), t - 2, dtype=torch.long).to(img.device)
+        #         xt_sub1_bar = self.q_sample(x_start=xt_sub1_bar, x_end=x2_bar, t=step2)
+
+        #     x = img - xt_bar + xt_sub1_bar
+        #     img = x
+        #     t = t - 1
         while (t):
             step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device) # batch timestep
-            x1_bar = self.denoise_fn(img, step)
-            x2_bar = self.get_x2_bar_from_xt(x1_bar, img, step)
-
-            if direct_recons is None:
-                direct_recons = x1_bar
-
-            xt_bar = x1_bar
-            if t != 0:
-                xt_bar = self.q_sample(x_start=xt_bar, x_end=x2_bar, t=step)
-
-            xt_sub1_bar = x1_bar
-            if t - 1 != 0:
-                step2 = torch.full((batch_size,), t - 2, dtype=torch.long).to(img.device)
-                xt_sub1_bar = self.q_sample(x_start=xt_sub1_bar, x_end=x2_bar, t=step2)
-
-            x = img - xt_bar + xt_sub1_bar
+            each_k_svd = self.denoise_fn(img, step)
+            # x_noise_bar = torch.zeros_like(x_0_bar)
+            
+            # xt_bar = x_0_bar
+            # if t != 0:
+            #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
+            
+            x = img +each_k_svd
             img = x
             t = t - 1
 
@@ -498,27 +620,49 @@ class SVDDiffusion(nn.Module):
         """
         
         params:
-            x_start: x_0
+            x_start: x_0  反向过程中待生成的图
             x_end: x_t
 
             return: x_t
-        func_desc:
+        origin_func_desc:
             对应于 DDPM 前向扩散过程中的噪声添加步骤
             $$x_t=\sqrt{\bar{\alpha _t}}x_0 + \sqrt{1-\bar{\alpha_t}}noise$$
         """
-        return (
-                extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
-                extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_end
-        )
+        # return (
+        #         extract(self.sqrt_alphas_cumprod, t, x_start.shape) * x_start +
+        #         extract(self.sqrt_one_minus_alphas_cumprod, t, x_start.shape) * x_end
+        # )
+        """
+        after_func_desc:
+            对应于 DDPM 前向扩散过程中的噪声添加步骤
+            $$x_t=\sum_
+        
+        """
+        """
+        有两种采样模式 
+            1.预测 k_svd
+            2. 预测还原的过程
+        parms:
+            t=k svd k
+            x_end=None
+            x_start=img
+            
+        """
+        # 模式1
+        return svd_batch_one(matrix=x_start,k=t)
     
 
     def get_x2_bar_from_xt(self, x1_bar, xt, t):
         """
-        
+        parms:
+            x1_bar:predict restore image
+            xt: noise or 
 
          func_desc:
             对应于 DDPM 反向扩散过程中的噪声添加步骤,但没加噪声的版本 lake of $$\sigma Z$$
-
+            通过修改x_t 改变 采样方式 x_t=naive_noise    sample=ddpm  
+                    x_t= x2_bar = self.get_x2_bar_from_xt(x1_bar, img, step)  sample=ddim
+            
         """
         return (
                 (xt - extract(self.sqrt_alphas_cumprod, t, x1_bar.shape) * x1_bar) /
@@ -534,16 +678,22 @@ class SVDDiffusion(nn.Module):
             x_end: x_t=noise
 
         func_desc:
-            计算预测噪音的损失
+            计算重建图和原图的差距
+
+        after:
+            计算得出的svd和预测的svd差距
         """
+       
         b, c, h, w = x_start.shape
         if self.train_routine == 'Final':
-            x_mix = self.q_sample(x_start=x_start, x_end=x_end, t=t)
-            x_recon = self.denoise_fn(x_mix, t)
+            # x_mix = self.q_sample(x_start=x_start, x_end=x_end, t=t) 
+            # x_recon = self.denoise_fn(x_mix, t) 
+            x_t=svd_batch_accmulate(x_start,t)
+            predice_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
-                loss = (x_start - x_recon).abs().mean()
+                loss = (x_t - predice_svd).abs().mean()
             elif self.loss_type == 'l2':
-                loss = F.mse_loss(x_start, x_recon)
+                loss = F.mse_loss(x_start, predice_svd)
             else:
                 raise NotImplementedError()
 
@@ -604,6 +754,7 @@ class SVDDiffusion(nn.Module):
         assert h == img_size and w == img_size, f'height and width of image must be {img_size}'
         t = torch.randint(0, self.num_timesteps, (b,), device=device).long()
         return self.p_losses(x1, x2, t, *args, **kwargs)
+
 
 
 

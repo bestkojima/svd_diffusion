@@ -1,5 +1,5 @@
 from model import Unet
-from schedule import GaussianDiffusion
+from schedule import GaussianDiffusion,SVDDiffusion
 from train import Trainer
 import torchvision
 import os
@@ -22,7 +22,8 @@ model = Unet(
     channels=3
 ).to(device)
 
-diffusion = GaussianDiffusion(
+config.time_steps=20
+diffusion = SVDDiffusion(
     model,
     image_size = 32,
     
@@ -34,7 +35,16 @@ diffusion = GaussianDiffusion(
 ).to(device)
 
 
-
+# diffusion = GaussianDiffusion(
+#     model,
+#     image_size = 32,
+    
+#     channels = 3,
+#     timesteps = config.time_steps,   # number of steps
+#     loss_type = config.loss_type,    # L1 or L2
+#     train_routine = config.train_routine,
+#     sampling_routine = config.sampling_routine,
+# ).to(device)
 
 
 import torch
