@@ -689,11 +689,11 @@ class SVDDiffusion(nn.Module):
             # x_mix = self.q_sample(x_start=x_start, x_end=x_end, t=t) 
             # x_recon = self.denoise_fn(x_mix, t) 
             x_t=svd_batch_accmulate(x_start,t)
-            predice_svd=self.denoise_fn(x_t,t)
+            x_t_plus_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
-                loss = (x_t - predice_svd).abs().mean()
+                loss = (x_start - x_t_plus_svd).abs().mean()
             elif self.loss_type == 'l2':
-                loss = F.mse_loss(x_start, predice_svd)
+                loss = F.mse_loss(x_start, x_t_plus_svd)
             else:
                 raise NotImplementedError()
 

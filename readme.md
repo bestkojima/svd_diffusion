@@ -151,3 +151,17 @@ $$
 \bar{x}_0=model(x_t,t)
 x=
 $$
+
+保存最低loss模型
+
+img不该为none
+
+训练第二个afhq animal face
+
+https://www.doubao.com/thread/wd0186da99b9f85df
+
+[采样模式提出]: https://www.doubao.com/thread/wd0186da99b9f85df
+
+ 模仿cold diffusion
+
+预测还原出的图像

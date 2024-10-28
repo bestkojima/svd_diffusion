@@ -22,7 +22,7 @@ model = Unet(
     channels=3
 ).to(device)
 
-config.time_steps=20
+config.time_steps=32
 diffusion = SVDDiffusion(
     model,
     image_size = 32,
