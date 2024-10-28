@@ -1,5 +1,5 @@
 from model import Unet
-from schedule import GaussianDiffusion
+from schedule import GaussianDiffusion,SVDDiffusion
 from train import Trainer
 import torchvision
 import os
@@ -10,24 +10,37 @@ from config import denoise_mnist_train,model_config,mnist_config
 
 import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+from pprint import pprint
 
 # 使用 TrainingConfig 类来设置参数
 config = denoise_mnist_train()
-print(config)
-
+pprint(config)
+print("##########################")
 model = Unet(
     dim = 64,
     dim_mults = (1, 2, 4, 8),
     channels=3
 ).cuda()
 
+
+
+diffusion = SVDDiffusion(
+    model,
+    image_size = 32,
+    
+    channels = 3,
+    timesteps = 32,   # number of steps mnist
+    loss_type = config.loss_type,    # L1 or L2
+    train_routine = config.train_routine,
+    sampling_routine = config.sampling_routine,
+).to(device)
+
 diffusion = GaussianDiffusion(
     model,
     image_size = 32,
     
     channels = 3,
-    timesteps = config.time_steps,   # number of steps
+    timesteps = 32,   # number of steps
     loss_type = config.loss_type,    # L1 or L2
     train_routine = config.train_routine,
     sampling_routine = config.sampling_routine,
@@ -50,7 +63,7 @@ trainer = Trainer(
     gradient_accumulate_every = 2,    # gradient accumulation steps
     ema_decay = 0.995,                # exponential moving average decay
     fp16 = False,                       # turn on mixed precision training with apex
-    results_folder = config.save_folder,
+    results_folder = "test",
     load_path = config.load_path,
     save_and_sample_every=1000,
     dataset = 'mnist'
