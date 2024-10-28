@@ -515,7 +515,7 @@ class SVDDiffusion(nn.Module):
             # xt_bar = x_0_bar
             # if t != 0:
             #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
-            
+            direct_recons=each_k_svd
             x = each_k_svd-svd_batch_accmulate(each_k_svd,t)+ svd_batch_accmulate(each_k_svd,t-2)
             img = x
             t = t - 1
