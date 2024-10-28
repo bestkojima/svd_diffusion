@@ -35,16 +35,16 @@ diffusion = SVDDiffusion(
     sampling_routine = config.sampling_routine,
 ).to(device)
 
-diffusion = GaussianDiffusion(
-    model,
-    image_size = 32,
+# diffusion = GaussianDiffusion(
+#     model,
+#     image_size = 32,
     
-    channels = 3,
-    timesteps = 32,   # number of steps
-    loss_type = config.loss_type,    # L1 or L2
-    train_routine = config.train_routine,
-    sampling_routine = config.sampling_routine,
-).to(device)
+#     channels = 3,
+#     timesteps = 32,   # number of steps
+#     loss_type = config.loss_type,    # L1 or L2
+#     train_routine = config.train_routine,
+#     sampling_routine = config.sampling_routine,
+# ).to(device)
 
 
 
@@ -63,7 +63,7 @@ trainer = Trainer(
     gradient_accumulate_every = 2,    # gradient accumulation steps
     ema_decay = 0.995,                # exponential moving average decay
     fp16 = False,                       # turn on mixed precision training with apex
-    results_folder = "test",
+    results_folder = "test2",
     load_path = config.load_path,
     save_and_sample_every=1000,
     dataset = 'mnist'

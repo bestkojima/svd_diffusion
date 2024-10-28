@@ -471,7 +471,7 @@ class SVDDiffusion(nn.Module):
 
         self.train_routine = train_routine
         self.sampling_routine = sampling_routine
-
+        print("类的名称是:", self.__class__.__name__)
     
     @torch.no_grad()
     #P_sample
@@ -692,7 +692,7 @@ class SVDDiffusion(nn.Module):
             x_t=svd_batch_accmulate(x_start,t)
             x_t_plus_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
-                loss =  (x_start - x_t_plus_svd).abs().mean()*0.8+F.mse_loss(x_t_plus_svd,x_t+svd_batch_one(x_start,t-1))*0.2
+                loss =  (x_start - x_t_plus_svd).abs().mean()*0.8+F.mse_loss(x_t_plus_svd,x_t+svd_batch_one(x_start,t-1))*0.2 #####
             elif self.loss_type == 'l2':
                 loss = F.mse_loss(x_start, x_t_plus_svd)
             else:
