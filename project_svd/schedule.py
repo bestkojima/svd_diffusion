@@ -351,7 +351,7 @@ class GaussianDiffusion(nn.Module):
 #     return reconstructed_matrix
 
 
-
+#q_sample
 def svd_batch_accmulate(matrix, k=None):
     U, S, V = torch.svd(matrix)
     
@@ -373,8 +373,8 @@ def svd_batch_accmulate(matrix, k=None):
         s_temp = torch.zeros_like(a)
         
         # 如果 k 是 None，则使用所有奇异值
-        if k is None:
-            s_temp = a
+        if k[i]<0:
+             recon.append(matrix[i])
         else:
             s_temp[:, k[i]:, k[i]:] = a[:, k[i]:, k[i]:]
         
@@ -439,6 +439,7 @@ def svd_batch_one(matrix,k=None):
 #TODO sample 修改 反向采样  算法1完成
 #TODO p_losses 修改
 #TODO 修改time_steps=k
+#TODO 修改采样 检查 两个自创函数 以符合[0]
 
 class SVDDiffusion(nn.Module):
     def __init__(
@@ -483,7 +484,7 @@ class SVDDiffusion(nn.Module):
         if t == None:
             t = self.num_timesteps
 
-        xt = img
+        xt = torch.zeros_like(img)
         direct_recons = torch.zeros_like(img)
 
         # while (t):
@@ -515,7 +516,7 @@ class SVDDiffusion(nn.Module):
             # if t != 0:
             #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
             
-            x = each_k_svd
+            x = each_k_svd-svd_batch_accmulate(each_k_svd,t)+ svd_batch_accmulate(each_k_svd,t-2)
             img = x
             t = t - 1
 
