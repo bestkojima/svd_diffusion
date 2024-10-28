@@ -63,9 +63,9 @@ trainer = Trainer(
     gradient_accumulate_every = 2,    # gradient accumulation steps
     ema_decay = 0.995,                # exponential moving average decay
     fp16 = False,                       # turn on mixed precision training with apex
-    results_folder = "test2",
+    results_folder = "test3",
     load_path = config.load_path,
-    save_and_sample_every=1000,
+    save_and_sample_every=200,
     dataset = 'mnist'
 )
 

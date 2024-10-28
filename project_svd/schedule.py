@@ -430,7 +430,7 @@ def svd_batch_one(matrix,k=None):
         recon.append(torch.matmul(torch.matmul(U[i],s_temp) , V[i].transpose(-1,-2)))
         
     reconstructed_matrix=torch.stack(recon,0)
-    print(reconstructed_matrix.shape)
+    
     return reconstructed_matrix
 
 
@@ -515,7 +515,7 @@ class SVDDiffusion(nn.Module):
             # if t != 0:
             #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
             
-            x = img +each_k_svd
+            x = each_k_svd
             img = x
             t = t - 1
 
@@ -692,7 +692,7 @@ class SVDDiffusion(nn.Module):
             x_t=svd_batch_accmulate(x_start,t)
             x_t_plus_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
-                loss =  (x_start - x_t_plus_svd).abs().mean()*0.8+F.mse_loss(x_t_plus_svd,x_t+svd_batch_one(x_start,t-1))*0.2 #####
+                loss =  (x_start - x_t_plus_svd).abs().mean() #####
             elif self.loss_type == 'l2':
                 loss = F.mse_loss(x_start, x_t_plus_svd)
             else:
