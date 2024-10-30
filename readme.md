@@ -165,3 +165,7 @@ https://www.doubao.com/thread/wd0186da99b9f85df
  模仿cold diffusion
 
 预测还原出的图像
+
+!dataset
+celeba https://www.kaggle.com/datasets/badasstechie/celebahq-resized-256x256
+afhq https://www.kaggle.com/datasets/andrewmvd/animal-faces

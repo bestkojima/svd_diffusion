@@ -353,6 +353,7 @@ class GaussianDiffusion(nn.Module):
 
 #q_sample
 def svd_batch_accmulate(matrix, k=None):
+    k=k.clamp(min=0)
     U, S, V = torch.svd(matrix)
     
     """
@@ -516,7 +517,7 @@ class SVDDiffusion(nn.Module):
             # if t != 0:
             #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
             direct_recons=each_k_svd
-            x = each_k_svd-svd_batch_accmulate(each_k_svd,t)+ svd_batch_accmulate(each_k_svd,t-2)
+            x = each_k_svd-svd_batch_accmulate(each_k_svd,step)+ svd_batch_accmulate(each_k_svd,step-1)
             img = x
             t = t - 1
 
