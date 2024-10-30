@@ -482,7 +482,7 @@ class SVDDiffusion(nn.Module):
         if t == None:
             t = self.num_timesteps
 
-        xt = img
+        xt = torch.zeros_like(img)
         direct_recons = torch.zeros_like(img)
 
         # while (t):

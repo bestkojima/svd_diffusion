@@ -1,6 +1,6 @@
-from model import Unet
-from schedule import GaussianDiffusion,SVDDiffusion
-from train import Trainer
+from main_structure.model import Unet
+from main_structure.schedule import GaussianDiffusion,SVDDiffusion
+from main_structure.train import Trainer
 import torchvision
 import os
 import errno
@@ -10,7 +10,7 @@ from config import denoise_mnist_train,model_config,mnist_config
 
 import torch
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
+print(f"device={device}")
 
 # 使用 TrainingConfig 类来设置参数
 config = denoise_mnist_train()
@@ -52,17 +52,17 @@ diffusion = torch.nn.DataParallel(diffusion, device_ids=range(torch.cuda.device_
 
 trainer = Trainer(
     diffusion,
-    config.data_path,
+    "./root_mnist", # data path
     image_size = 32,
     train_batch_size = 32,
     train_lr = 2e-5,
-    train_num_steps = 10,         # total training steps
+    train_num_steps = 500,         # total training steps
     gradient_accumulate_every = 2,    # gradient accumulation steps
     ema_decay = 0.995,                # exponential moving average decay
     fp16 = False,                       # turn on mixed precision training with apex
-    results_folder = config.save_folder,
+    results_folder = "test_local",
     load_path = config.load_path,
-    save_and_sample_every=2,
+    save_and_sample_every=100,
     dataset = 'mnist'
 )
 
