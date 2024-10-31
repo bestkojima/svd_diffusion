@@ -402,6 +402,37 @@ def svd_batch_accmulate(matrix, k=None):
 #     return reconstructed_matrix
 
 
+def svd_batch_accmulate_reverse(matrix, k=None):
+    U, S, V = torch.svd(matrix)
+    
+    """
+    Perform SVD reconstruction for each batch element with accumulated singular values starting from k.
+    
+    Parameters:
+    - matrix: Input batch matrix of shape (batch_size, m, n).
+    - k: A list or tensor of k values for each batch element. If None, use all singular values.
+    
+    Returns:
+    - reconstructed_matrix: Reconstructed batch matrix of shape (batch_size, m, n).
+    """
+    batch_size = matrix.shape[0]
+    recon = []
+    
+    for i in range(batch_size):
+        a = torch.diag_embed(S[i])
+        s_temp = torch.zeros_like(a)
+       
+        # 如果 k 是 None，则使用所有奇异值
+        if k is None:
+            s_temp = a
+        else:
+            s_temp[:, :k[i],  :k[i]] = a[:,  :k[i], :k[i]]
+        
+        recon.append(torch.matmul(torch.matmul(U[i], s_temp), V[i].transpose(-1, -2)))
+    
+    reconstructed_matrix = torch.stack(recon, 0)
+    return reconstructed_matrix
+
 
 def svd_batch_one(matrix,k=None):
     U, S, V = torch.svd(matrix)
@@ -514,7 +545,7 @@ class SVDDiffusion(nn.Module):
             # if t != 0:
             #     xt_bar = self.q_sample(x_start=xt_bar, x_end=x_noise_bar, t=step)
             
-            x = img +each_k_svd
+            x = each_k_svd
             img = x
             t = t - 1
 

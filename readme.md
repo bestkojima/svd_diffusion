@@ -151,3 +151,56 @@ $$
 \bar{x}_0=model(x_t,t)
 x=
 $$
+
+保存最低loss模型
+
+img不该为none
+
+训练第二个afhq animal face
+
+https://www.doubao.com/thread/wd0186da99b9f85df
+
+[采样模式提出]: https://www.doubao.com/thread/wd0186da99b9f85df
+
+ 模仿cold diffusion
+
+预测还原出的图像
+
+```python
+def svd_batch_accmulate_reverse(matrix, k=None):
+    U, S, V = torch.svd(matrix)
+    
+    """
+    Perform SVD reconstruction for each batch element with accumulated singular values starting from k.
+    
+    Parameters:
+    - matrix: Input batch matrix of shape (batch_size, m, n).
+    - k: A list or tensor of k values for each batch element. If None, use all singular values.
+    
+    Returns:
+    - reconstructed_matrix: Reconstructed batch matrix of shape (batch_size, m, n).
+    """
+    batch_size = matrix.shape[0]
+    recon = []
+    
+    for i in range(batch_size):
+        a = torch.diag_embed(S[i])
+        s_temp = torch.zeros_like(a)
+       
+        # 如果 k 是 None，则使用所有奇异值
+        if k is None:
+            s_temp = a
+        else:
+            s_temp[:, :k[i],  :k[i]] = a[:,  :k[i], :k[i]]
+        
+        recon.append(torch.matmul(torch.matmul(U[i], s_temp), V[i].transpose(-1, -2)))
+    
+    reconstructed_matrix = torch.stack(recon, 0)
+    return reconstructed_matrix
+print(temp.shape)
+z=[]
+for i in range(1,513):
+    c=(temp-svd_batch_accmulate_reverse(temp,[i])).abs().mean().item()
+    z.append(c)
+```
+

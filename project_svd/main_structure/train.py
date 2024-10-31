@@ -219,9 +219,9 @@ class Trainer(object):
 
                     data_1 = next(self.dl)
                     data_2 = torch.randn_like(data_1)
-                    og_img = data_2.to(device)
+                    og_img = data_1.to(device)
 
-                    xt, direct_recons, all_images = self.ema_model.module.sample(batch_size=batches, img=data_1)
+                    xt, direct_recons, all_images = self.ema_model.module.sample(batch_size=batches, img=og_img)
 
                     og_img = (og_img + 1) * 0.5
                     utils.save_image(og_img, str(self.results_folder / f'sample-og-{milestone}.png'), nrow=6)
