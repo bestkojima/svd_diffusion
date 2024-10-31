@@ -514,10 +514,10 @@ class SVDDiffusion(nn.Module):
         self.denoise_fn.eval()
         if t == None:
             t = self.num_timesteps
-
+        device=img.device
         xt = torch.zeros_like(img)
         direct_recons = torch.zeros_like(img)
-
+        img=torch.zeros_like(img).to(device=device) #TODO mistake 搞成原图 现设置为 噪声 或 accumulate reverse
         # while (t):
         #     step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device) # batch timestep
         #     x1_bar = self.denoise_fn(img, step)
@@ -553,7 +553,7 @@ class SVDDiffusion(nn.Module):
 
         self.denoise_fn.train()
 
-        return xt, direct_recons, img
+        return xt, direct_recons, img #  模糊后的图像 ，算法1重建 ，算法2 重建 
     
     #TODO
     @torch.no_grad()
@@ -721,7 +721,7 @@ class SVDDiffusion(nn.Module):
         if self.train_routine == 'Final':
             # x_mix = self.q_sample(x_start=x_start, x_end=x_end, t=t) 
             # x_recon = self.denoise_fn(x_mix, t) 
-            x_t=svd_batch_accmulate_reverse(x_start,t)
+            x_t=svd_batch_accmulate_reverse(x_start,t) # t得变化timestep-t
             predice_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
                 loss = (x_start - predice_svd).abs().mean()
