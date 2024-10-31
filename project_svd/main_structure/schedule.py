@@ -401,6 +401,8 @@ def svd_batch_accmulate(matrix, k=None):
     
 #     return reconstructed_matrix
 
+#origin 0, max
+# 1  max+1
 
 def svd_batch_accmulate_reverse(matrix, k=None):
     U, S, V = torch.svd(matrix)
@@ -537,7 +539,7 @@ class SVDDiffusion(nn.Module):
         #     img = x
         #     t = t - 1
         while (t):
-            step = torch.full((batch_size,), t - 1, dtype=torch.long).to(img.device) # batch timestep
+            step = torch.full((batch_size,), t , dtype=torch.long).to(img.device) # batch timestep
             each_k_svd = self.denoise_fn(img, step)
             # x_noise_bar = torch.zeros_like(x_0_bar)
             
@@ -719,10 +721,10 @@ class SVDDiffusion(nn.Module):
         if self.train_routine == 'Final':
             # x_mix = self.q_sample(x_start=x_start, x_end=x_end, t=t) 
             # x_recon = self.denoise_fn(x_mix, t) 
-            x_t=svd_batch_accmulate(x_start,t)
+            x_t=svd_batch_accmulate_reverse(x_start,t)
             predice_svd=self.denoise_fn(x_t,t)
             if self.loss_type == 'l1':
-                loss = (x_t - predice_svd).abs().mean()
+                loss = (x_start - predice_svd).abs().mean()
             elif self.loss_type == 'l2':
                 loss = F.mse_loss(x_start, predice_svd)
             else:

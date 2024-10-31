@@ -23,7 +23,8 @@ model = Unet(
 ).cuda()
 
 
-
+image_size=32
+timesteps=image_size+1
 diffusion = SVDDiffusion(
     model,
     image_size = 32,
